@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// Address repersents a general address with and ID, IP and Port.
 type Address struct {
 	ID    string
 	ExtIP *net.IP
@@ -17,13 +18,24 @@ type Address struct {
 }
 
 var (
+	// ErrMalformedAddressString is  anerror to indicate that an address string isn't properly formatted.
 	ErrMalformedAddressString = errors.New("address is not in format id@ip/port")
-	ErrInvalidPortNumber      = errors.New("invalid port number in address")
-	ErrInvalidIPAddr          = errors.New("invalid ip in address")
-	ErrInvalidID              = errors.New("invalid id")
+
+	// ErrInvalidPortNumber is an error to indicate that the port of an address is incorrect.
+	ErrInvalidPortNumber = errors.New("invalid port number in address")
+
+	// ErrInvalidIPAddr is an error to indicate that the IP of and address is incorrect.
+	ErrInvalidIPAddr = errors.New("invalid ip in address")
+
+	// ErrInvalidIPAddr is an error to indicate that the ID of an address is incorrect.
+	ErrInvalidID = errors.New("invalid id")
 )
 
-func New(v string) (Address, error) {
+// Parse parses an address string to an Address.
+//
+// The address string should be in the format: id@ip/port.
+// IP can be IPv4 or IPv6.
+func Parse(v string) (Address, error) {
 	parts := strings.Split(v, "/")
 	if len(parts) != 2 {
 		// Port missing.
@@ -68,6 +80,9 @@ func New(v string) (Address, error) {
 	return addr, nil
 }
 
+// IP returns the external IP address if set, or else the local IP address.
+//
+// Panics is no external or local IP address is set.
 func (a Address) IP() net.IP {
 	if a.ExtIP != nil {
 		return *a.ExtIP
@@ -80,10 +95,12 @@ func (a Address) IP() net.IP {
 	panic("nil ips")
 }
 
+// String implements the stringer interface and returns the address string.
 func (a Address) String() string {
 	return fmt.Sprintf("%s@%s/%d", a.ID, a.IP().String(), a.Port)
 }
 
+// Addr returns a host address string as in the format ip:port.
 func (a Address) Addr() string {
 	ip := a.IP()
 

@@ -82,7 +82,7 @@ func TestAddress(t *testing.T) {
 
 			for _, tc := range tt {
 				t.Run(tc.name, func(t *testing.T) {
-					addr, err := address.New(tc.val)
+					addr, err := address.Parse(tc.val)
 					if err != tc.err {
 						t.Fatalf("\t%s\tTest %d:\tShould get error %q, but got \"%v\".", failed, testID, tc.err, err)
 					}
