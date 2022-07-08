@@ -24,20 +24,21 @@ func TestAddress(t *testing.T) {
 				id        string
 				ip        net.IP
 				port      uint
+				proto     string
 				expString string
 				expAddr   string
 			}{
-				{name: "publicip4", id: "1234", ip: net.ParseIP("8.8.8.8"), port: 3000, expString: "1234@8.8.8.8/3000", expAddr: "8.8.8.8:3000"},
-				{name: "localip4", id: "1234", ip: net.ParseIP("192.168.0.100"), port: 3000, expString: "1234@192.168.0.100/3000", expAddr: "192.168.0.100:3000"},
-				{name: "undefip4", id: "1234", ip: net.ParseIP("0.0.0.0"), port: 3000, expString: "1234@0.0.0.0/3000", expAddr: "0.0.0.0:3000"},
-				{name: "publicip6", id: "1234", ip: net.ParseIP("2001:4860:4802:32::a"), port: 3000, expString: "1234@2001:4860:4802:32::a/3000", expAddr: "[2001:4860:4802:32::a]:3000"},
-				{name: "localip6", id: "1234", ip: net.ParseIP("fd4d:779d:5bd2:68ba:1234:abcd:4321:dcba"), port: 3000, expString: "1234@fd4d:779d:5bd2:68ba:1234:abcd:4321:dcba/3000", expAddr: "[fd4d:779d:5bd2:68ba:1234:abcd:4321:dcba]:3000"},
-				{name: "undefip6", id: "1234", ip: net.ParseIP("::"), port: 3000, expString: "1234@::/3000", expAddr: "[::]:3000"},
+				{"publicip4", "1234", net.ParseIP("8.8.8.8"), 3000, "udp", "1234@8.8.8.8/3000/udp", "8.8.8.8:3000"},
+				{"localip4", "1234", net.ParseIP("192.168.0.100"), 3000, "udp", "1234@192.168.0.100/3000/udp", "192.168.0.100:3000"},
+				{"undefip4", "1234", net.ParseIP("0.0.0.0"), 3000, "udp", "1234@0.0.0.0/3000/udp", "0.0.0.0:3000"},
+				{"publicip6", "1234", net.ParseIP("2001:4860:4802:32::a"), 3000, "udp", "1234@2001:4860:4802:32::a/3000/udp", "[2001:4860:4802:32::a]:3000"},
+				{"localip6", "1234", net.ParseIP("fd4d:779d:5bd2:68ba:1234:abcd:4321:dcba"), 3000, "udp", "1234@fd4d:779d:5bd2:68ba:1234:abcd:4321:dcba/3000/udp", "[fd4d:779d:5bd2:68ba:1234:abcd:4321:dcba]:3000"},
+				{"undefip6", "1234", net.ParseIP("::"), 3000, "udp", "1234@::/3000/udp", "[::]:3000"},
 			}
 
 			for _, tc := range tt {
 				t.Run(tc.name, func(t *testing.T) {
-					addr := address.Address{ID: tc.id, ExtIP: &tc.ip, Port: tc.port}
+					addr := address.Address{ID: tc.id, ExtIP: &tc.ip, Port: tc.port, Proto: tc.proto}
 					got := addr.String()
 					if got != tc.expString {
 						t.Fatalf("\t%s\tTest %d:\tShould get address string %q, but got: %q", failed, testID, tc.expString, got)
@@ -62,22 +63,24 @@ func TestAddress(t *testing.T) {
 				val  string
 				err  error
 			}{
-				{"noPortv4", "1234@8.8.8.8", address.ErrMalformedAddressString},
-				{"noPortv6", "1234@2001:4860:4802:32::a", address.ErrMalformedAddressString},
-				{"negativePortv4", "1234@8.8.8.8/-5", address.ErrInvalidPortNumber},
-				{"negativePortv6", "1234@2001:4860:4802:32::a/-5", address.ErrInvalidPortNumber},
-				{"wrongIPv4", "1234@8.8.8.-8/3000", address.ErrInvalidIPAddr},
-				{"wrongIPv6", "1234@2001:4860:4802:32::q/3000", address.ErrInvalidIPAddr},
-				{"noID4", "8.8.8.8/3000", address.ErrMalformedAddressString},
-				{"noIDv6", "2001:4860:4802:32::a/3000", address.ErrMalformedAddressString},
-				{"emptyID4", "@8.8.8.8/3000", address.ErrInvalidID},
-				{"emptyIDv6", "@2001:4860:4802:32::a/3000", address.ErrInvalidID},
-				{"validPubv4", "1234@8.8.8.8/3000", nil},
-				{"validPubv6", "1234@2001:4860:4802:32::a/3000", nil},
-				{"validLocv4", "1234@192.168.0.100/3000", nil},
-				{"validLocv6", "1234@fd4d:779d:5bd2:68ba:1234:abcd:4321:dcba/3000", nil},
-				{"validUnspecv4", "1234@0.0.0.0/3000", nil},
-				{"validUnspecv6", "1234@::/3000", nil},
+				{"noPortv4", "1234@8.8.8.8/udp", address.ErrMalformedAddressString},
+				{"noPortv6", "1234@2001:4860:4802:32::a/udp", address.ErrMalformedAddressString},
+				{"noProtov4", "1234@8.8.8.8/proto", address.ErrMalformedAddressString},
+				{"noProtov6", "1234@2001:4860:4802:32::a/proto", address.ErrMalformedAddressString},
+				{"negativePortv4", "1234@8.8.8.8/-5/udp", address.ErrMalformedAddressString},
+				{"negativePortv6", "1234@2001:4860:4802:32::a/-5/udp", address.ErrMalformedAddressString},
+				{"wrongIPv4", "1234@8.8.8.-8/3000/udp", address.ErrInvalidIPAddr},
+				{"wrongIPv6", "1234@2001:4860:4802:32::q/3000/udp", address.ErrInvalidIPAddr},
+				{"noID4", "8.8.8.8/3000/udp", address.ErrMalformedAddressString},
+				{"noIDv6", "2001:4860:4802:32::a/3000/udp", address.ErrMalformedAddressString},
+				{"emptyID4", "@8.8.8.8/3000/udp", address.ErrMalformedAddressString},
+				{"emptyIDv6", "@2001:4860:4802:32::a/3000/udp", address.ErrMalformedAddressString},
+				{"validPubv4", "1234@8.8.8.8/3000/udp", nil},
+				{"validPubv6", "1234@2001:4860:4802:32::a/3000/udp", nil},
+				{"validLocv4", "1234@192.168.0.100/3000/udp", nil},
+				{"validLocv6", "1234@fd4d:779d:5bd2:68ba:1234:abcd:4321:dcba/3000/udp", nil},
+				{"validUnspecv4", "1234@0.0.0.0/3000/udp", nil},
+				{"validUnspecv6", "1234@::/3000/udp", nil},
 			}
 
 			for _, tc := range tt {

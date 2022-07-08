@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
-	"strings"
 )
 
 // Address repersents a general address with and ID, IP and Port.
@@ -15,11 +15,12 @@ type Address struct {
 	ExtIP *net.IP
 	LocIP *net.IP
 	Port  uint
+	Proto string
 }
 
 var (
 	// ErrMalformedAddressString is  anerror to indicate that an address string isn't properly formatted.
-	ErrMalformedAddressString = errors.New("address is not in format id@ip/port")
+	ErrMalformedAddressString = errors.New("address is not in format id@ip/port/protocol")
 
 	// ErrInvalidPortNumber is an error to indicate that the port of an address is incorrect.
 	ErrInvalidPortNumber = errors.New("invalid port number in address")
@@ -28,7 +29,7 @@ var (
 	ErrInvalidIPAddr = errors.New("invalid ip in address")
 
 	// ErrInvalidIPAddr is an error to indicate that the ID of an address is incorrect.
-	ErrInvalidID = errors.New("invalid id")
+	// ErrInvalidID = errors.New("invalid id")
 )
 
 // Parse parses an address string to an Address.
@@ -36,13 +37,21 @@ var (
 // The address string should be in the format: id@ip/port.
 // IP can be IPv4 or IPv6.
 func Parse(v string) (Address, error) {
-	parts := strings.Split(v, "/")
-	if len(parts) != 2 {
-		// Port missing.
-		return Address{}, ErrMalformedAddressString
+	re, err := regexp.Compile(`(?P<id>.+)@(?P<ip>\S+)/(?P<port>\d+)/(?P<proto>.+)`)
+	if err != nil {
+		return Address{}, fmt.Errorf("regex compilation failed: %v", err)
 	}
 
-	port, err := strconv.Atoi(parts[1])
+	res := re.FindStringSubmatch(v)
+	if len(res) < 5 {
+		return Address{}, ErrMalformedAddressString
+	}
+	id := res[1]
+	ipStr := res[2]
+	portStr := res[3]
+	proto := res[4]
+
+	port, err := strconv.Atoi(portStr)
 	if err != nil {
 		return Address{}, ErrInvalidPortNumber
 	}
@@ -50,25 +59,15 @@ func Parse(v string) (Address, error) {
 		return Address{}, ErrInvalidPortNumber
 	}
 
-	idhost := strings.Split(parts[0], "@")
-	if len(idhost) != 2 {
-		// ID or IP missing.
-		return Address{}, ErrMalformedAddressString
-	}
-
-	id := idhost[0]
-	if id == "" {
-		return Address{}, ErrInvalidID
-	}
-
-	ip := net.ParseIP(idhost[1])
+	ip := net.ParseIP(ipStr)
 	if ip == nil {
 		return Address{}, ErrInvalidIPAddr
 	}
 
 	addr := Address{
-		ID:   id,
-		Port: uint(port),
+		ID:    id,
+		Port:  uint(port),
+		Proto: proto,
 	}
 
 	if ip.IsPrivate() || ip.IsUnspecified() {
@@ -97,7 +96,7 @@ func (a Address) IP() net.IP {
 
 // String implements the stringer interface and returns the address string.
 func (a Address) String() string {
-	return fmt.Sprintf("%s@%s/%d", a.ID, a.IP().String(), a.Port)
+	return fmt.Sprintf("%s@%s/%d/%s", a.ID, a.IP().String(), a.Port, a.Proto)
 }
 
 // Addr returns a host address string as in the format ip:port.
