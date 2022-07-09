@@ -32,3 +32,12 @@ deps-cleancache:
 
 list:
 	go list -mod=mod all
+
+# ==============================================================================
+# Local interaction
+
+run:
+	go run app/services/toqns/main.go
+
+nodekey: 
+	go run app/tooling/wallet/toqns-cli/main.go nodekey

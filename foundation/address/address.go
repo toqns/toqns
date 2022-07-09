@@ -9,18 +9,19 @@ import (
 	"strconv"
 )
 
-// Address repersents a general address with and ID, IP and Port.
+// Address represents a general address with and ID, IP, port, protocol and optional destination.
 type Address struct {
-	ID    string
-	ExtIP *net.IP
-	LocIP *net.IP
-	Port  uint
-	Proto string
+	ID          string
+	ExtIP       *net.IP
+	LocIP       *net.IP
+	Port        uint
+	Proto       string
+	Destination string
 }
 
 var (
 	// ErrMalformedAddressString is  anerror to indicate that an address string isn't properly formatted.
-	ErrMalformedAddressString = errors.New("address is not in format id@ip/port/protocol")
+	ErrMalformedAddressString = errors.New("address is not in format id@ip/port/protocol[/destination]")
 
 	// ErrInvalidPortNumber is an error to indicate that the port of an address is incorrect.
 	ErrInvalidPortNumber = errors.New("invalid port number in address")
@@ -37,7 +38,7 @@ var (
 // The address string should be in the format: id@ip/port.
 // IP can be IPv4 or IPv6.
 func Parse(v string) (Address, error) {
-	re, err := regexp.Compile(`(?P<id>.+)@(?P<ip>\S+)/(?P<port>\d+)/(?P<proto>.+)`)
+	re, err := regexp.Compile(`(?P<id>.+)@(?P<ip>\S+)/(?P<port>\d+)/(?P<proto>.+)/?(?P<dest>.+)?`)
 	if err != nil {
 		return Address{}, fmt.Errorf("regex compilation failed: %v", err)
 	}
@@ -50,6 +51,10 @@ func Parse(v string) (Address, error) {
 	ipStr := res[2]
 	portStr := res[3]
 	proto := res[4]
+	dest := ""
+	if len(res) == 6 {
+		dest = res[5]
+	}
 
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
@@ -65,9 +70,10 @@ func Parse(v string) (Address, error) {
 	}
 
 	addr := Address{
-		ID:    id,
-		Port:  uint(port),
-		Proto: proto,
+		ID:          id,
+		Port:        uint(port),
+		Proto:       proto,
+		Destination: dest,
 	}
 
 	if ip.IsPrivate() || ip.IsUnspecified() {
