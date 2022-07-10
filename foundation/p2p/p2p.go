@@ -157,6 +157,7 @@ func (n *Node) ListenAndServe() error {
 
 // Shutdown gracefully stops the node.
 func (n *Node) Shutdown(ctx context.Context) error {
+	// TODO: Prevent "Error:read udp [::]:3000: use of closed network connection" on shutdown.
 	n.shutdown <- struct{}{}
 	return n.conn.Close()
 }
