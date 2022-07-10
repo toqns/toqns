@@ -37,7 +37,7 @@ list:
 # Local interaction
 
 run:
-	go run app/services/toqns/main.go
+	go run app/services/toqns/main.go | go run app/tooling/logfmt/main.go
 
 nodekey: 
 	go run app/tooling/wallet/toqns-cli/main.go nodekey

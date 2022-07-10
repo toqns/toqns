@@ -1,6 +1,6 @@
 # Binaries
 app/services/toqns/toqns
-app/tooling/toqns-cli/toqns-cli
+app/tooling/wallet/toqns-cli
 
 # Mac
 .DS_Store
