@@ -50,6 +50,19 @@ func New(log *zap.SugaredLogger, cfg NodeConfig) (*Node, error) {
 			Decoder: p2p.RequestDecoderFunc(json.Unmarshal),
 			Encoder: p2p.RequestEncoderFunc(json.Marshal),
 			Handler: p2p.HandleFunc(tmpHandler),
+			Log: func(l p2p.LogLevel, msg string, kv ...any) {
+				kv = append(kv, "message", msg)
+				switch l {
+				case p2p.Debug:
+					log.Debugw("p2p", kv...)
+				case p2p.Warning:
+					log.Warnw("p2p", kv...)
+				case p2p.Info:
+					log.Infow("p2p", kv...)
+				default:
+					log.Errorw("p2p", kv...)
+				}
+			},
 		},
 		log: log,
 	}, nil
